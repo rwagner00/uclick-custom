@@ -1,0 +1,6 @@
+name = Property Update
+description = Flags Properties when they're updated and governs removal of those flags.
+version = 1.0
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = property_update.module

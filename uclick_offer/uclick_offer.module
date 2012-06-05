@@ -1,0 +1,183 @@
+<?php 
+
+//CONTENTTYPE_node_form
+
+/**
+ * Implements hook_form_alter().
+ */
+function uclick_offer_form_alter(&$form, $form_state, $form_id) {
+
+  if ($form_id == 'offer_node_form') {
+    $form['#validate'][] = 'uclick_offer_offer_node_form_validate';
+     
+/*
+ * A set of functions to turn fields visible or invisible depending on other fields.
+ * Will also mark fields as required, but this DOES NOT actually make them required.
+ * Custom validation is needed to actually make fields required, this is just JS.
+ */    
+    
+
+    $form['field_offer_second_buyer']['#states'] = array(
+      'visible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'individual'),
+      ),
+      'required' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'individual'),
+      ),
+    );
+    
+    $form['field_offer_agent_name']['#states'] = array(
+      'visible' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'yes')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'yes')
+      ),
+      'invisible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'agent')
+      ),
+    );
+    
+    $form['field_offer_agent_question']['#states'] = array (
+      'invisible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'agent')
+      ),
+      'optional' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'agent')
+      ),
+    );
+
+    $form['field_offer_agent_options']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'no')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'no')
+      ),
+      'invisible' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) '_none')
+      ),
+      'invisible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'yes')
+      ),
+      'invisible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'agent')
+      ),     
+    );
+
+    $form['field_offer_llc_authority']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+    );
+
+    $form['field_offer_llc_article']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+    );
+
+    $form['field_offer_closing_amount']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_seller_closing"]' => array('value' => (string) 'yes')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_seller_closing"]' => array('value' => (string) 'yes')
+      ),
+    );
+    
+    $form['field_offer_repair_amount']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_seller_repair"]' => array('value' => (string) 'yes')
+      ),
+      'required' => array(
+        ':input[name^="field_offer_seller_repair"]' => array('value' => (string) 'yes')
+      ),
+    );
+    
+    //Change the appearance of optional fields to match mandatory fields. (By default it says "None".)
+    $form['field_offer_second_buyer']['und']['#options']['_none'] = ' - Select a value - ';
+    $form['field_offer_llc_article']['und']['#options']['_none'] = ' - Select a value - ';
+    $form['field_offer_llc_authority']['und']['#options']['_none'] = ' - Select a value - ';
+    $form['field_offer_agent_options']['und']['#options']['_none'] = ' - Select a value - ';
+    $form['field_offer_agent_question']['und']['#options']['_none'] = ' - Select a value - ';
+    
+  }
+}
+
+/*
+ * Custom and dynamic validation for the offer form. 
+ * Checks set values and sets other values to required if necessary.
+ * Additionally, fields that should not be filled in (ex. second buyer if user selects "real estate agent) are deleted. 
+ */
+function uclick_offer_offer_node_form_validate($form, &$form_state) {
+
+  //If user is an LLC, checks for authority and article fields, and zeroes invidual fields. 
+  if ($form_state['values']['field_offer_category']['und']['0']['value'] == 'llc') {
+    $form_state['values']['field_offer_second_buyer']['und']['0']['value'] = '';
+    
+    if ($form_state['values']['field_offer_llc_authority']['und']['0']['value'] == '' ) {
+      form_set_error('field_offer_llc_authority', t('Please select if you have authority to sign for your LLC.'));
+    }
+    if ($form_state['values']['field_offer_llc_article']['und']['0']['value'] == '') {
+      form_set_error('field_offer_llc_article', t('Please select if you have an article of incorporation.'));
+    }    
+  }
+  
+  
+  //If user is an invidual, checks second buyer and zeroes LLC fields.
+  if($form_state['values']['field_offer_category']['und']['0']['value'] == 'individual') {
+    $form_state['values']['field_offer_llc_authority']['und']['0']['value'] = '';
+    $form_state['values']['field_offer_llc_article']['und']['0']['value'] = '';
+    if ($form_state['values']['field_offer_second_buyer']['und']['0']['value'] == '') {
+      form_set_error('field_offer_second_buyer', t('Please select if there is a second buyer.'));
+    }
+  }
+  
+  //If user isn't an agent, check fields for completion that relate to both LLC and individuals.
+  if ($form_state['values']['field_offer_category']['und']['0']['value'] != 'agent') {
+    if ($form_state['values']['field_offer_agent_question']['und']['0']['value'] == '') {
+      form_set_error('field_offer_agent_question', t('Please select whether or not you have an agent.'));
+    }
+    elseif ($form_state['values']['field_offer_agent_question']['und']['0']['value'] == 'yes') {
+      if ($form_state['values']['field_offer_agent_name']['und']['0']['value'] == '') {
+        form_set_error('field_offer_agent_name', t('Please enter your agent\'s name.'));
+      }
+    }
+    else {
+      if ($form_state['values']['field_offer_agent_options']['und']['0']['value'] == '') {
+        form_set_error('field_offer_agent_options', t('Please select if you wish to hire an agent.'));
+      }
+    }
+  }
+
+  //Zero everything if user is an agent.
+  else {
+    $form_state['values']['field_offer_agent_question']['und']['0']['value'] = '';
+    $form_state['values']['field_offer_agent_options']['und']['0']['value'] = '';
+    $form_state['values']['field_offer_llc_authority']['und']['0']['value'] = '';
+    $form_state['values']['field_offer_llc_article']['und']['0']['value'] = '';
+    $form_state['values']['field_offer_second_buyer']['und']['0']['value'] = '';  
+  }
+  
+  //Zero Agent Options if the user said they have an agent.
+  if ($form_state['values']['field_offer_agent_question']['und']['0']['value'] == 'yes') {
+    $form_state['values']['field_offer_agent_options']['und']['0']['value'] = '';
+  }
+  
+  //Zero amounts if user says they don't want a repair credit or closing cost help.
+  if ($form_state['values']['field_offer_seller_closing']['und']['0']['value'] == 'no') {
+    $form_state['values']['field_offer_closing_amount']['und']['0']['value'] = '';
+  }
+  if ($form_state['values']['field_offer_seller_repair']['und']['0']['value'] == 'no') {
+    $form_state['values']['field_offer_repair_amount']['und']['0']['value'] = '';
+  }
+}
+
+

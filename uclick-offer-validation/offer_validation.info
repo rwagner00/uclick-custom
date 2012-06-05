@@ -1,0 +1,6 @@
+name = Offer Validation
+description = Custom validation governing the creation of offers.
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = offer_validation.module
+version = 0.1

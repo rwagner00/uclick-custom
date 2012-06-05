@@ -1,0 +1,193 @@
+<?php 
+/**
+ * Implements hook_block_info().
+ */
+function appointment_form_block_info() {
+  $blocks['appointment_form'] = array(
+    'info' => t('Appointment Form'), 
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function appointment_form_block_view($delta = '') {
+  switch ($delta) {
+    case 'appointment_form':
+      $block['subject'] = t('Schedule an appointment.');
+      $block['content'] = drupal_get_form('appointment_form_form');
+    break;
+  }
+  return $block;
+}
+
+
+/*
+ * Builds the form for the appointment block.
+ */
+  
+function appointment_form_form($form, &$form_state) {
+  global $user;
+  $form['fields'] = array(
+    '#type' => 'fieldset',
+    '#title' => '',
+  	'#attributes' => array('class' => array('appointment_form_fields')),
+  );
+  if ($user->uid != 0) {
+    $firstname = db_select('field_data_field_user_first_name', 'fn')
+      ->fields('fn', array('field_user_first_name_value'))
+      ->condition('entity_id', $user->uid)
+      ->execute()
+      ->fetchField();
+    $lastname = db_select('field_data_field_user_last_name', 'ln')
+      ->fields('ln', array('field_user_last_name_value'))
+      ->condition('entity_id', $user->uid)
+      ->execute()
+      ->fetchField();     
+  }
+  else {
+    $firstname = '';
+    $lastname = '';
+  }
+ 
+  $date = '2012-01-01 00:00:01';
+  $format = 'm-d-Y H:i';
+
+  $form['fields']['first_name'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('First Name'),
+    '#default_value' => $firstname,
+    '#required' => TRUE,
+    '#attributes' => array('class' => array('first_name')),
+    '#size' => 20,
+  );
+  
+  $form['fields']['last_name'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Last Name'),
+    '#default_value' => $lastname,
+    '#required' => TRUE,
+    '#attributes' => array('class' => array('last_name')),
+    '#size' => 20,
+  );
+  
+  $form['fields']['email_address'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Last Name'),
+    '#default_value' => $user->mail,
+    '#required' => TRUE,
+    '#attributes' => array('class' => array('email_address')),
+    '#size' => 20,  
+  );
+  
+  $form['fields']['date'] = array(
+    '#type' => 'date_popup',
+    '#title' => t('Date and time for appointment. Please note date and time on on seperate lines.'),
+    '#date_format' => $format,
+    '#date_label_position' => 'within',
+    '#date_increment' => 5,
+    '#date_year_range' => '-0:+1',
+    '#attributes' => array('class' => array('date')),
+    '#default_value' => $date, 
+  );
+  
+  $form['fields']['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Schedule Appointment',
+  );
+  
+  return $form;
+}
+
+/*
+ * Appointment form validation.
+ */
+function appointment_form_form_validate($form, &$form_state) {
+  global $user;
+  if ($user->uid == 0) {
+    form_set_error('fields', t('In order to reduce spam, you must be logged in to schedule an 
+    	appointment, sorry!'));
+  }
+  
+  //Get the NID of the current node. 
+  //If the user has sent an email already today, prevent it from happening again.
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+  }
+  $flag = flag_get_flag('email_sent') or die("No Email Sent flag defined");
+  if ($flag->is_flagged($nid)) {
+    form_set_error('fields', t('You\'ve already sent an email today'));
+  }
+  
+  //Make sure all fields are filled in and the email address is actually an email.
+  if (!isset($form_state['values']['first_name']) || !isset($form_state['values']['last_name'])) {
+    form_set_error('first_name', t('You must provide your first and last name.'));
+  }
+  if (!isset($form_state['values']['email_address']) || 
+      !valid_email_address($form_state['values']['email_address'])) {
+    
+    form_set_error('email_address', t('You must provide your email so that the seller can contact you.'));
+  }
+  if (!isset($form_state['values']['date'])) {
+    form_set_error('date', t('Please input both a date and a time to meet the seller.'));
+  }
+  
+  //Flag the node to prevent future emails.
+  $flag->flag('flag', $nid);
+}
+
+
+/*
+ * Implements submit for the appointment form.
+ */
+function appointment_form_form_submit($form, &$form_state) { 
+  global $user;
+  $module = 'appointment_form';
+  $key = 'schedule_appointment';
+  
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    $nid = arg(1);
+    $node = node_load($nid);
+  }
+  $to = db_select('users', 'u')
+    ->fields('u', array('mail'))
+    ->condition('uid', $node->uid)
+    ->execute()
+    ->fetchField();
+
+  $language = language_default();
+  $params = $form_state;
+  $from = (string)$user->mail;
+  $send = TRUE;
+  
+  drupal_mail($module, $key, $to, $language, $params, $from, $send);
+}
+
+/**
+ * Implements hook_mail().
+ */
+function appointment_form_mail($key, &$message, $params) {
+  $date = date('M d, Y', strtotime($params['values']['date']));
+  $time = date('g:i A', strtotime($params['values']['date']));
+  $message['subject'] = $params['values']['first_name'] . ' ' . $params['values']['last_name'] . ' would like to schedule an appointment.';
+  $message['body'][] = $params['values']['first_name'] . ' is requesting to meet you or an agent at your home on ' . $date .
+  	' at ' . $time . '. Please send them an email at ' . $params['values']['email_address'] . ' if this time needs to ' . 
+    'be changed for any reason.';
+}
+
+/**
+ * Implements hook_cron().
+ * Deletes all emailed already today flags.
+ */
+function appointment_form_cron() {
+  if (date('H') >= 20 && date('H') <= 24 ) {
+    db_delete('flag_counts')
+      ->condition('fid', array(3))
+      ->execute();
+    db_delete('flag_content')
+      ->condition('fid', array(3))
+      ->execute();
+  }  
+}

@@ -1,0 +1,49 @@
+<?php 
+
+/**
+ * Implements hook_block_info().
+ */
+function view_count_block_info() {
+  $blocks['view_count_id'] = array(
+    'info' => t('View Count Block'), 
+  );
+
+  return $blocks;
+}
+
+function view_count_block_view($delta = '') {
+  $block = array();
+  switch($delta) {
+    case 'view_count_id':
+      $block['subject'] = t('View Statistics: ');
+      $block['content'] = view_count_content();
+      break;
+  }
+  return $block;
+}
+
+function view_count_content() {
+	
+  if (arg(0) == 'node') {
+	  $nid = arg(1);
+	}
+	if (isset($nid)) {
+    $view_count = db_select('node_counter', 'nc')
+      ->fields('nc', array('totalcount', 'daycount'))
+      ->condition('nid', $nid)
+      ->execute()
+      ->fetchAssoc();
+    if ($view_count['totalcount'] != '') {
+      return 'Total Views: ' . $view_count['totalcount'] . '. <br>' .
+        'Views Today: ' . $view_count['daycount'] . '.';
+    }
+    else {
+      return 'No viewing statistics available for this page yet.';
+    }
+	}
+  else {
+    return 'No viewing statistics available for this page.';
+  }
+}
+
+

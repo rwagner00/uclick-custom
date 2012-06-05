@@ -1,0 +1,45 @@
+<?php 
+
+/**
+ * Implements hook_block_info().
+ */
+function countdown_timer_block_info() {
+  $blocks['countdown_timer'] = array(
+    'info' => t('A countdown timer for properties'), 
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function countdown_timer_block_view($delta = '') {
+  switch ($delta) {
+    case 'countdown_timer':
+      if (arg(0) == 'node' && is_numeric(arg(1))) {
+        $nid = arg(1);
+        $node = node_load($nid);
+        $block['subject'] = 'Time remaining on this home.';
+        $block['content'] = countdown_timer_block_content($node->field_property_remaining['und']['0']['value']);
+      }
+      else {
+        $block['subject'] = '';
+        $block['content'] = '';
+      }
+    break;
+  }
+  return $block;
+}
+
+function countdown_timer_block_content($full_date) {
+  $remaining = date('Y-m-d', strtotime($full_date));
+dsm($remaining);
+  return theme('jstimer', array(
+   'widget_name' => 'jst_timer',
+   'widget_args' => array(
+     'datetime' => $full_date,
+     'format_txt' => '%years% Year, %months% Months, %ydays% Days, and %hours% Hours.',
+   )
+ ));  
+}

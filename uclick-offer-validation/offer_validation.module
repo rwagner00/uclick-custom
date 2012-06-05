@@ -1,0 +1,29 @@
+<?php 
+
+/**
+ * Implements hook_form_alter().
+ */
+function offer_validation_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'offer_node_form') {
+    $form['#after_build'][] = 'offer_validation_after_build';
+  }
+}
+
+function offer_validation_after_build($form, &$form_state) {
+	$form['#validate'][] = 'offer_validation_custom';
+	return $form;
+} 
+
+function offer_validation_custom($form, &$form_state) {
+  $asking_price = db_select('field_data_field_property_minimum', 'min')
+	 ->fields('min', array('field_property_minimum_value'))
+	 ->condition('entity_id', $form_state['values']['field_offer_property']['und']['0']['target_id'])
+	 ->execute()
+	 ->fetchAssoc();
+	 $minimum_offer = $asking_price['field_property_minimum_value']/2;
+  if ($form_state['values']['field_offer_price']['und']['0']['value'] < $minimum_offer) {
+    form_set_error('field_offer_price', "We're sorry, but your price offer is too low. Your offer must be at 
+  	least half of the seller's asking price ($" . number_format($asking_price['field_property_minimum_value'], 2) . ").");
+  }
+}
+

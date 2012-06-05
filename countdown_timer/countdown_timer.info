@@ -1,0 +1,9 @@
+name = Countdown Timer
+description = Provides a countdown timer for properties.
+version = 1.0
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = countdown_timer.module
+dependencies[] = date
+dependencies[] = jstimer
+dependencies[] = jst_timer

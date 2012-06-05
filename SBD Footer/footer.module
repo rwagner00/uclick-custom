@@ -1,0 +1,37 @@
+<?php 
+
+/**
+ * Implements hook_block_info().
+ */
+function footer_block_info() {
+  $blocks['footer'] = array(
+    'info' => t('SBD Footer'), 
+  );
+
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ */
+function footer_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+  	case 'footer':
+  		$output = 'Powered by: ' . l('Spyder Byte Design', 'http://www.spyderbytedesign.com', array('attributes' => array('id' => 'spyderbyte')));
+  		if (user_is_logged_in()) {
+  			$output .= ' || ' . l('Admin Logout', 'user/logout') . ' | ' . l('Manage', 'admin/content/node');
+  		}
+  		else {
+  			$output .= ' || ' . l('Admin Login', 'user');
+  		}
+  	break;
+  	case 'default':
+  		$output = '<p> Powered by Spyder Byte Design';
+  	break;
+  }
+  $block['title'] = '';
+  $block['content'] = $output;
+  return $block;
+}

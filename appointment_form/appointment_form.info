@@ -1,0 +1,6 @@
+name = Appointment Form
+description = Generates a basic appointment form for uclick homes.
+version = 1.0
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = appointment_form.module

@@ -1,0 +1,6 @@
+name = Counter Offer
+description = Clone an offer into a Counter offer
+version = 1.0
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = counter_offer.module

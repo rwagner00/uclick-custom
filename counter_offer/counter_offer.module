@@ -1,0 +1,537 @@
+<?php
+/* @author Reese Morgan
+ * This is a module for uclickrealty.com
+ * It helps maintain the offers and counter offers
+*/
+/**
+ * Implements hook_menu().
+ */
+function counter_offer_menu() {
+  $items = array();
+
+  $items['clone/%'] = array(
+    'title' => 'Clone',
+    'description' => 'Clones a page via nid(only page or offer)',
+    'page callback' => 'counter_offer_clone_page',
+  	'access arguments' => array('access content'),
+  	'page arguments' => array(1)
+  );
+  $items['test/attachment'] = array(
+    'title' => 'Attachement test form',
+    'desctiption' => 'this is a form that should be only for testing the ablity to send an attachment',
+    'page callback' => 'counter_offer_attachment_page',
+    'access arguments' => array('access content'),
+  );
+  $items['test/counter'] = array(
+  	'title' => 'Counter test form',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('counter_offer_counter_form'),
+  	'access arguments' => array('access content'),
+  );
+  $items['counter-offer/%'] = array(
+  	'title' =>'Counter Offer',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('counter_offer_counter_form', 1),
+  	'access arguments' => array('access content'),
+  );
+  return $items;
+}
+function counter_offer_main($nid, $val=NULL){
+  $n = node_load($nid);
+  if(strcasecmp($n -> type, 'offer') == 0){
+      $node = new stdClass();
+      $node -> type = $n -> type;
+      $node -> title = $n-> title . ' clone';
+      $node -> language = $n -> language;
+      node_object_prepare($node);
+      $field_names = array(
+        'field_offer_price',
+        'field_offer_property',
+        'field_offer_firstname',
+        'field_offer_lastname',
+      	'field_offer_category',
+	      'field_offer_llc_authority',
+	      'field_offer_llc_article',
+	      'field_offer_second_buyer',
+	      'field_offer_agent_question',
+	      'field_offer_agent_options',
+	      'field_offer_agent_name',
+        'field_offer_address',
+        'field_offer_email',
+        'field_offer_telephone',
+	      'field_offer_seller_closing',
+	      'field_offer_closing_amount',
+      	'field_offer_seller_repair',
+	      'field_offer_seller_repair_amount',
+	      'field_offer_offer_contract', 
+      	'field_offer_buyer',
+      	'field_offer_seller',
+      );
+      $not_set;
+      foreach($field_names as $var){
+        if(isset($n -> $var)){
+          $node -> $var = $n -> $var;
+        }
+      }
+      $node -> field_offer_price[$node -> language][0]['value'] = $val['price'];
+      dpm(array(
+      	'node -> closing' => $node -> field_offer_seller_closing,
+      	'val -> closing' => $val['closing_boolean'],
+      
+      
+      ));
+      $node -> field_offer_seller_closing[$node -> language][0]['value'] = $val['closing_boolean'];
+      $node -> field_offer_seller_repair[$node -> language][0]['value']  = $val['repair_boolean'];
+      if(strcasecmp($val['closing_boolean'] , 'yes') == 0){
+      	
+      	$node -> field_offer_closing_amount[$node -> language][0]['value'] = $val['closing_amount'];
+      	$node -> field_offer_closing_amount[$node -> language][0]['safe_value']	= $val['closing_amount'];
+      }
+      else{
+      	$node -> field_offer_closing_amount[$node -> language][0]['value'] = 0;
+      	$node -> field_offer_closing_amount[$node -> language][0]['safe_value'] = 0;
+      }
+      if(strcasecmp($val['repair_boolean'], 'yes') == 0){
+      	dpm($val['repair_amount'],'Repair amount');
+      	$node -> field_offer_repair_amount[$node -> language][0]['value'] = $val['repair_amount'];
+      	$node -> field_offer_repair_amount[$node -> language][0]['safe_value'] = $val['repair_amount'];
+      }
+      else{
+      	$node -> field_offer_repair_amount[$node -> language][0]['value'] = 0;
+      	$node -> field_offer_repair_amount[$node -> language][0]['safe_value'] = 0;
+      }
+      
+      node_save($node);
+      dpm($node);
+      return $node -> nid;
+  }
+  elseif(strcasecmp($n -> type, 'page') == 0){
+      GLOBAL $user;
+      $node = new stdClass();
+      $node -> type = $n -> type;
+      node_object_prepare($node);
+      //@TODO: change $user -> name to something more meaning full or personal ?
+      $node -> title = $n -> title . ' Counter Offer by ' . $user -> name;
+      dsm($user);
+      $node -> language = LANGUAGE_NONE;
+      $node -> body = $n -> body;
+      node_save($node);
+      return $node -> nid;
+  }
+  else{
+    return FALSE;
+  }
+  return $node -> nid;
+}
+/**
+ * 
+ * Pagecallback to test the clone function
+ * @param $param nid of clone parent
+ */
+function counter_offer_clone_page($param) {
+  $clone = counter_offer_main($param);
+  drupal_goto('node/' . $clone . '/edit'); 
+ // return node_load(counter_offer_main($param));
+}
+/**
+ * 
+ * Page for Attachment test form
+ */
+function counter_offer_attachment_page(){
+  return array(
+    'form' => drupal_get_form('counter_offer_attachment_form'),
+  );
+}
+/**
+ * 
+ * Form that gets info to send an email with an attachment
+ * @param $form
+ * @param $form_state
+ */
+function counter_offer_attachment_form($form, &$form_state){
+  $form['to'] = array(
+    '#type' => 'textfield',
+    '#title' => t('To'),
+  );
+  $form['from'] = array(
+    '#type' => 'textfield',
+    '#title' => t('From'),
+  );
+  $form['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+  );
+  $form['file'] = array(
+    '#type' => 'file',
+    '#title' => t('Attachment'),
+  );
+  $form['send'] = array(
+    '#type' => 'submit',
+    '#value' => t('Send'),
+  );
+  return $form;
+}
+/**
+ * 
+ * Summit function that sends the email with an attachment
+ * @param $form
+ * @param $form_state
+ */
+function counter_offer_attachment_form_submit($form, &$form_state) {
+  //Include Attachment Emailer
+  module_load_include('php','counter_offer', 'attachment_email');
+
+  $to = $form_state['values']['to'];
+  $from = $form_state['values']['from'];
+  $message = $form_state['values']['message'];
+  dsm($form_state, 'Form Information');
+  $attachment[] = array(
+    'path' => 'public://README.txt',
+    'type' => 'txt',
+  );
+  //Send Email!
+//                            $to, $from, $subject, $message, $attachments = array())
+  $email = new AttachmentEmail($to, $from,'Subject',$message, $attachment);
+  //$email->send();
+
+  //perform any addition logic....
+
+}
+/**
+ * Implements hook_block_info().
+ */
+function counter_offer_block_info() {
+  $blocks['counter_offer_btn'] = array(
+    'info' => t('Provides a button to create a counter offer'), 
+  );
+  $blocks['offer_redirect'] = array(
+    'info' => t('Rediects a user away from a offer they should not see')
+  );
+
+  return $blocks;
+}
+/**
+ * Implements hook_block_configure().
+ */
+function counter_offer_block_configure($delta = '') {
+  $form = array();
+  switch ($delta) {
+    case 'counter_offer_btn':
+     $form['btn_txt'] = array(
+        '#type' => 'textfield', 
+        '#title' => t('Button text'), 
+        '#default_value' =>variable_get('counter_offer_btn_txt','Create a counter offer.'), 
+        '#description' => t('This is the text that will be shown on the button to create a counter offer.<br />The default is"Create a counter offer"'),
+      );
+      break;
+    case 'offer_redirect':
+      $form['goto'] =array(
+        '#type' => 'textfield',
+        '#title' => t('Redirect Destination'),
+        '#default_value' => variable_get('counter_offer_redirect_destination', '<front>'),
+        '#description' => t('Where a user should be redirected to. Default is " ') . '<front>' . t(' ".'), 
+      );
+      break;
+    
+  }
+  return $form;
+}
+/**
+ * Implements hook_block_save().
+ */
+function counter_offer_block_save($delta = '', $edit = array()) {
+  switch( $delta ) {
+    case 'counter_offer_btn':
+      variable_set('counter_offer_btn_txt', $edit['btn_txt']);
+      break;
+    case 'offer_redirect':
+      variable_set('counter_offfer_redirect_destination', $edit['goto']);
+      break;
+  }
+}
+/**
+ * Implements hook_block_view().
+ */
+function counter_offer_block_view($delta = '') {
+	
+  switch($delta){
+    case 'counter_offer_btn':
+      $block['content'] = drupal_get_form('counter_offer_create_block_form');
+      break;
+    case 'offer_redirect':
+      $block['content'] = conter_offer_block_content($delta);
+  }
+  return $block;
+}
+function conter_offer_block_content($delta) {
+	GLOBAL $user;
+	$node = node_load(arg(1));
+	//echo'<pre>';print_r($node -> field_offer_buyer);print_r($node -> field_offer_seller); echo '</pre>';
+	if(isset($node)){
+//		dsm($node-> field_offer_buyer[$node -> language]);
+//		dpm(array("user" => $user,'node' =>$node));
+		if(strcasecmp($node->type, 'offer') == 0){
+			
+			if($user-> uid != $node -> field_offer_buyer[$node -> language][0]['target_id']){
+				if($user -> uid!= $node -> field_offer_seller[$node -> language][0]['target_id']){
+					if(!in_array('developer', $user -> roles)){
+						drupal_goto(variable_get('counter_offer_redirect_destination', '<front>'));
+					}
+				}		
+			}	
+		}
+	}
+	
+}
+function counter_offer_create_block_form($form, &$form_state) {
+ $form['btn'] = array(
+   '#type' => 'submit',
+   '#value' => variable_get('counter_offer_btn_txt','Create a counter offer.'),
+ );
+ $form['nid'] = array(
+   '#type' => 'hidden',
+   '#value' => arg(1),
+ );
+ return $form; 
+}
+function counter_offer_create_block_form_submit($form, &$form_state){
+	//dpm($form_state['values']);
+  //$new_nid = counter_offer_main($form_state['values']['nid']);
+  //dpm($new_nid,'New_node');
+  //drupal_goto('node/' . $new_nid . '/edit' );
+  drupal_goto('counter-offer/' . $form_state['values']['nid']);
+}
+/**
+ * 
+ * Fill out the pdf templet for the offer contract 
+ * @param node $node
+ * @return string path to the file
+ */
+function counter_offer_create_pdf($node){
+	return true;
+}
+/**
+ * Implements hook_node_insert().
+ * send out an email with the attached contract when a offer is created (should never be edited)
+ * TODO: fix for the new counter offer idea 5/15/2012
+ */
+function counter_offer_node_insert($node) {
+	if(strcasecmp($node -> type, 'offer') == 0){
+		GLOBAL $user;
+		$lang = $node -> language;
+		$subject = 'Mail from Uclick';
+//		dpm($node);
+		$buyer = $node -> field_offer_buyer[$lang][0]['target_id'];
+		$seller = $node -> field_offer_seller[$lang][0]['target_id'];
+		$lang = $node -> language;
+		
+		//dpm($node);
+		
+		if($user -> uid == $buyer ||
+			 $user -> uid == $seller){
+		 	//The curent user is either the buyer or the seller
+		 	$pdf = counter_offer_create_pdf($node);
+		 	if(!$pdf){
+		 		die('The contract could not be created');
+		 	}
+		 	if($user -> uid == $buyer){
+		 		//creator (current user) is the buyer
+		 		$base = db_select('users', 'u')
+		 				-> fields('u', array('name','mail',))
+		 				-> condition('uid', $seller);
+		 		$f_name = db_select('field_user_first_name')
+		 				-> condition('uid', $seller)
+		 				-> fields('field_user_first_name', array('field_user_first_name_value'));
+		 		$l_name = db_select('field_user_last_name')
+		 				-> condition('uid', $seller)
+		 				-> fields('field_user_last_name', array('field_user_last_name_value'));
+  		 	//$base->join($f_name,'fn','u.uid == fn.uid');
+		 		//$base->join($l_name,'ln','u.uid == ln.uid');
+		 		$results = $base -> execute() -> fetch();
+//		 		dsm($results, 'Results');
+		 		$to = $results -> mail;
+		 		$from = $user -> mail;
+		 		$message = "this is a test message";
+		 		$attachment = $pdf;
+		 	}
+		 	else {
+		 		//creator (current user) is the seller
+		 		
+		 		$base = db_select('users', 'u')
+		 				-> fields('u', array('name','mail',))
+		 				-> condition('uid', $buyer);
+ 				
+		 		$f_name = db_select('field_user_first_name')
+		 				-> condition('uid', $buyer)
+		 				-> fields('field_user_first_name', array('field_user_first_name_value'));
+		 		$l_name = db_select('field_user_last_name')
+		 				-> condition('uid', $buyer)
+		 				-> fields('field_user_last_name', array('field_user_last_name_value'));
+		 		
+//		 		$base->join($f_name,'fn','u.uid == fn.uid');
+//		 		$base->join($l_name,'ln','u.uid == ln.uid');
+		 		$results = $base->execute()->fetch();
+		 		$to = $results ->mail;
+		 		$from = $user -> mail;
+		 		$message = "this is a test message";
+		 		$file_txt = file_get_contents("public://test.pdf");
+		 		dpm($file_txt);
+		 		$attachment = array(
+		 			array(
+				 		'name' => 'README.txt',
+				 		'path' => "public://README.txt",
+				 		'type' => 'text',
+		 			)
+		 		);
+		 	}
+		 	
+		 	module_load_include('php','counter_offer', 'attachment_email');
+		 	$email = new AttachmentEmail($to, $from,$subject,$message, $attachment);
+		 	dsm($email,'email');
+//		 	dsm(drupal_realpath('public://findme.txt'));
+//		 	$email -> send();
+		}	 	
+	}
+}
+
+
+/**
+ * Implements hook_form().
+ */
+function counter_offer_counter_form($form, &$form_state, $nid) {
+  $form = array();
+  $n = node_load($nid);
+  $l = $n -> language;
+  if(strcasecmp($n -> type, 'offer') == 0){
+  	$house = node_load($n -> 	field_offer_property[$l][0]['target_id']);
+  	if(empty($house)){
+  		$form['empty_error'] = array(
+  		'#type' => 'markup',
+  		'#markup' => 'The property that this offer concerns has been removed.'
+	  	);
+	  	return $form;
+  	}
+  	$form['house_link'] = array(
+  		'#type' => 'markup',
+  		'#markup' => l($house->title,'node/'.$house->nid)
+  	);
+  	unset($house);
+  	
+  	$form['repair_boolean'] = array(
+  		'#type' => 'select',
+  		'#title' => 'Repair Cost?',
+  		'#options' => array(
+  			'no' => 'no',
+  			'yes' => 'yes',
+  		),
+  		'#default_value' => (isset($n -> field_offer_seller_repair[$l][0]['value']) ? $n -> field_offer_seller_repair[$l][0]['value'] : 'no'),
+  		'#description' => ''
+  	);
+	  
+	  $form['repair_amount'] = array(
+			'#type' => 'textfield',
+	  	'#title' =>	'Repair Amount',
+	  	'#default_value' => (isset($n ->field_offer_repair_amount[$l][0]['value']) ? $n ->field_offer_repair_amount[$l][0]['value'] : 'no'),
+	  	
+	  	'#maxlength' => 12,
+	  	'#size' => 12,
+	  	'#field_prefix' => '$',
+	  
+	  	'#states' => array(
+	  		'visible' => array(
+	  			':input[name^="repair_boolean"]' => array('value' => (string) 'yes')
+	  		),
+	  		'required' => array(
+	  			':input[name^="repair_boolean"]' => array('value' => (string) 'yes')
+	  		),
+	  	),
+	  	
+	  );
+  	$form['closing_boolean'] = array(
+  		'#type' => 'select',
+  		'#title' => 'Closing Cost?',
+  		'#options' => array(
+  			'no' => 'no',
+  			'yes' => 'yes',
+  		),
+  		//'#default_value' => $n -> field_offer_seller_closing[$l][0]['value'],
+  		'#default_value' => (isset($n -> field_offer_seller_closing[$l][0]['value']) ? $n -> field_offer_seller_closing[$l][0]['value'] : 'no'),
+  		'#description' => '',
+  	);
+	  $form['closing_amount'] = array(
+			'#type' => 'textfield',
+	  	'#title' =>	'Closing Cost',
+	  	'#default_value' => (isset($n ->field_offer_closing_amount[$l][0]['value'])? isset($n ->field_offer_closing_amount[$l][0]['value']) : ''),
+	  	
+	  	'#maxlength' => 12,
+	  	'#size' => 12,
+	  	'#field_prefix' => '$',
+	  
+	  	'#states' => array(
+	  		'visible' => array(
+	  			':input[name^="closing_boolean"]' => array('value' => (string) 'yes')
+	  		),
+	  		'required' => array(
+	  			':input[name^="closing_boolean"]' => array('value' => (string) 'yes')
+	  		),
+	  	),
+	  );
+	  $form['price'] = array(
+	    '#type' => 'textfield',
+	  	'#title' => 'Price',
+	  	'#default_value' => $n -> field_offer_price[$l][0]['value'],
+	  	'#required' => TRUE,
+	  	'#maxlength' => 12,
+	  	'#size' => 15,
+	  	'#field_prefix' => '$',
+	  );
+	  $form['nid'] = array(
+	  	'#type' => 'hidden',
+	  	'#value' => $nid
+	  );
+	  $form['submit'] = array(
+	  	'#type' => 'submit', '#value' => 'Submit',
+	  );
+  }
+  return $form;
+}
+
+function counter_offer_counter_form_validate($form, &$form_state){
+	$val = &$form_state['values'];
+	
+	if(strcasecmp($val['repair_boolean'] , 'yes') == 0){
+		if(empty($val['repair_amount'])){
+			form_set_error('repair_amount', 'A repair amount must be set, or elect "No"');	
+		}
+		if(!is_numeric($val['repair_amount'])){
+			form_set_error('repair_amount', 'A repair amount must be number');
+		}
+		if((float)$val['repair_amount'] <= 1){
+			form_set_error('repair_amount', 'A repair amount must be positive');
+		}
+	}
+	if(strcasecmp($val['closing_boolean'] , 'yes') == 0){
+		if(empty($val['closing_amount'])){
+			form_set_error('closing_amount', 'A closing cost must be set, or select "No"');	
+		}
+		if(!is_numeric($val['closing_amount'])){
+			form_set_error('closing_amount', 'A closing cost must be number');
+		}
+		if((float)$val['closing_amount'] < 0){
+			form_set_error('closing_amount', 'A closing cost must be positive');
+		}
+	}
+	if(!is_numeric($val['price'])){
+		form_set_error('price', 'Price must be a number');
+	}
+	if((float)$val['price'] <= 0){
+		form_set_error('price', 'Price must be positive');
+	}
+}
+function counter_offer_counter_form_submit($form, &$form_state){
+	$new_nid = counter_offer_main($form_state['values']['nid'],$form_state['values']);
+	drupal_goto('node/' . $new_nid);
+}
+
+
+	

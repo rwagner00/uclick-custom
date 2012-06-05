@@ -1,0 +1,37 @@
+<?php 
+/**
+ * Implements hook_node_update().
+ */
+function property_update_node_update($node) {
+  if ($node->type == 'property') {
+    if (arg(0) == 'node' && is_numeric(arg(1))) {
+      $nid = arg(1);
+      //dsm($nid);
+      $preflag = flag_get_flag('property_preflag', $nid) or die("No Property Preflag Defined.");
+      $updated_flag = flag_get_flag('property_updated_today', $nid) or die('No Property Flag defined');
+      if (!$updated_flag->is_flagged($nid) && $preflag->is_flagged($nid)) {
+        $updated_flag->flag('flag', $nid);
+      }
+      elseif (!$preflag->is_flagged($nid)) {
+        $preflag->flag('flag', $nid);
+      }
+    }    
+  }
+}
+
+/**
+ * Implements hook_cron().
+ * Clears all flags nightly.
+ */
+function property_update_cron() {
+	(int)$now = date('H');
+  if ($now >= 19 && $now <= 24 ) {
+    db_delete('flag_counts')
+      ->condition('fid', array(4, 5))
+      ->execute();
+    db_delete('flag_content')
+      ->condition('fid', array(4, 5))
+      ->execute();
+  }
+
+}

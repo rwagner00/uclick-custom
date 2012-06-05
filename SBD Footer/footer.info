@@ -1,0 +1,6 @@
+name = Footer
+description = Powered by Spyder Byte Design Footer
+version = 1.0
+package = SBD Custom
+core = 7.x
+files[] = footer.module

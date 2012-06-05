@@ -1,0 +1,62 @@
+<?php 
+
+//property_node_form
+
+/**
+ * Implements hook_form_alter().
+ */
+function uclick_offer_form_alter(&$form, $form_state, $form_id) {
+/*  if (isset($form_id) && isset($form)) {
+    dsm($form_id);
+    dsm($form);
+  }*/
+
+  if ($form_id == 'property_node_form') {
+    $form['field_property_acres']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_property_city"]' => array('value' => (string) 'yes')
+      ),
+    );
+    dsm($form['field_property_state']);
+  }
+  
+
+  if ($form_id == 'offer_node_form') {
+    $form['field_offer_agent_name']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'yes')
+      ),
+    );
+    $form['field_offer_agent_question']['#states'] = array (
+      'invisible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'agent')
+      ),
+    );
+    $form['field_offer_agent_options']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_agent_question"]' => array('value' => (string) 'no')
+      ),
+    );
+    $form['field_offer_llc_authority']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+    );
+    $form['field_offer_llc_article']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_category"]' => array('value' => (string) 'llc')
+      ),
+    );
+    $form['field_offer_closing_amount']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_seller_closing"]' => array('value' => (string) 'yes')
+      ),
+    );
+    $form['field_offer_repair_amount']['#states'] = array (
+      'visible' => array(
+        ':input[name^="field_offer_seller_repair"]' => array('value' => (string) 'yes')
+      ),
+    );
+
+  }
+}

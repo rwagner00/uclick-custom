@@ -1,0 +1,6 @@
+name = Uclick Offer Form
+description = Builds the special elements of the offer nodes.
+version = 1.0
+package = Spyderbyte Design Custom
+core = 7.x
+files[] = uclick_offer.module
