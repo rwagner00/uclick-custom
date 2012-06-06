@@ -1,0 +1,5 @@
+name = Highest Offer
+description = Highest offer tracking for uclick properties
+core = 7.x
+package = SpyderByte Design Custom
+files[] = highest_offer.module

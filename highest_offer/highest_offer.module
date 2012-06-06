@@ -1,0 +1,54 @@
+<?php 
+
+/**
+ * Implements hook_block_info().
+ */
+function highest_offer_block_info() {
+  $blocks['highest_offer'] = array(
+    'info' => t('Highest offer tracking for Uclick Properties.'), 
+  );
+
+  return $blocks;
+}
+
+
+/**
+ * Implements hook_block_view().
+ */
+function highest_offer_block_view($delta = '') {
+  $block = array();  
+  switch ($delta) {
+    case 'highest_offer':
+      $block['subject'] = "Highest Offer on This Property:";
+      $block['content'] = get_highest_offer();
+      //$block['content'] = 'foo';
+    break;
+  }
+  return $block;
+}
+
+function get_highest_offer() {
+  dsm('pass0');
+  if (arg(0) == 'node' && is_numeric(arg(1))) {
+    dsm('passone');
+    $nid = arg(1);
+    $foo = node_load(52);
+    dsm($foo->type);
+    if (node_type_get_type($nid) == 'property') {
+      dsm('passtwo');
+      $highest_offer = db_select('field_data_field_offer_price', 'p')
+        ->fields('p', array('field_offer_price_value'))
+        ->condition('entity_id', $nid)
+        ->range(0, 1)
+        ->orderBy('field_offer_price_value', 'DESC')
+        ->execute()
+        ->fetch();
+      if (is_numeric($highest_offer) && $highest_offer > 0) {
+        return 'foo'; 
+      } 
+      else {
+        return 'No offers have been made on this property yet.';
+      }
+    }
+  }
+}
