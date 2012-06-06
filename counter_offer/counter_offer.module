@@ -34,6 +34,12 @@ function counter_offer_menu() {
   	'page arguments' => array('counter_offer_counter_form', 1),
   	'access arguments' => array('access content'),
   );
+  $items['make-offer/%']= array(
+  	'title' =>'Create Offer',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('counter_offer_create_offer_form', 1),
+  	'access arguments' => array('access content'),
+  );
   return $items;
 }
 function counter_offer_main($nid, $val=NULL){
@@ -207,6 +213,9 @@ function counter_offer_block_info() {
   $blocks['offer_redirect'] = array(
     'info' => t('Rediects a user away from a offer they should not see')
   );
+  $blocks['offer_btn'] = array(
+  	'info' => t('Provides a button to create an offer on a porperty'),
+  );
 
   return $blocks;
 }
@@ -232,7 +241,14 @@ function counter_offer_block_configure($delta = '') {
         '#description' => t('Where a user should be redirected to. Default is " ') . '<front>' . t(' ".'), 
       );
       break;
-    
+    case 'offer_btn':
+    	$form['offer_btn_txt'] = array(
+    		'#type' => 'textfield',
+    		'#title' => t('Offer button text'),
+    		'#default_value' => variable_get('offer_btn_txt','Create an offer.'),
+    		'#description' => t('This is the text that will be shown on the button to create an offer.<br />The default is "Create an offer"'),
+    	);
+    	break;
   }
   return $form;
 }
@@ -247,6 +263,8 @@ function counter_offer_block_save($delta = '', $edit = array()) {
     case 'offer_redirect':
       variable_set('counter_offfer_redirect_destination', $edit['goto']);
       break;
+    case 'offer_btn':
+    	variable_set('offer_btn_txt', $edit['offer_btn_txt']);
   }
 }
 /**
@@ -260,6 +278,10 @@ function counter_offer_block_view($delta = '') {
       break;
     case 'offer_redirect':
       $block['content'] = conter_offer_block_content($delta);
+      break;
+    case 'offer_btn':
+    	$block['content'] = drupal_get_form('counter_offer_offer_block_form');
+    	break;
   }
   return $block;
 }
@@ -284,6 +306,7 @@ function conter_offer_block_content($delta) {
 	
 }
 function counter_offer_create_block_form($form, &$form_state) {
+	echo('Test');
  $form['btn'] = array(
    '#type' => 'submit',
    '#value' => variable_get('counter_offer_btn_txt','Create a counter offer.'),
@@ -300,6 +323,22 @@ function counter_offer_create_block_form_submit($form, &$form_state){
   //dpm($new_nid,'New_node');
   //drupal_goto('node/' . $new_nid . '/edit' );
   drupal_goto('counter-offer/' . $form_state['values']['nid']);
+}
+function counter_offer_offer_block_form($form, &$form_stat){
+	 $form['btn'] = array(
+   '#type' => 'submit',
+   '#value' => variable_get('offer_btn_txt','Create an offer.'),
+	 );
+	 $form['nid'] = array(
+	   '#type' => 'hidden',
+	   '#value' => arg(1),
+	 );
+	 return $form; 
+	
+}
+function counter_offer_offer_block_form_submit($form, &$form_state){
+		dpm($form_state['values'],'form_state');
+		drupal_goto('make-offer/'.$form_state['values']['nid']);
 }
 /**
  * 
@@ -532,6 +571,7 @@ function counter_offer_counter_form_submit($form, &$form_state){
 	$new_nid = counter_offer_main($form_state['values']['nid'],$form_state['values']);
 	drupal_goto('node/' . $new_nid);
 }
+
 
 
 	
