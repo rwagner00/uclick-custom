@@ -1,5 +1,5 @@
 name = view-count
 description = A block that will show the view count on the current node.
-package = SBD Custom
+package = Spyderbyte Design Custom
 core = 7.x
 files[] = view_count.module
