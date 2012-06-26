@@ -14,10 +14,16 @@ function appointment_form_block_info() {
  * Implements hook_block_view().
  */
 function appointment_form_block_view($delta = '') {
+  global $user;
   switch ($delta) {
     case 'appointment_form':
       $block['subject'] = t('Schedule an appointment.');
-      $block['content'] = drupal_get_form('appointment_form_form');
+      if (!in_array('anonymous user', $user->roles)) {
+        $block['content'] = drupal_get_form('appointment_form_form');
+      }
+      else {
+        $block['content'] = 'foobar';        
+      }
     break;
   }
   return $block;
@@ -52,47 +58,58 @@ function appointment_form_form($form, &$form_state) {
     $lastname = '';
   }
  
-  $date = '2012-01-01 00:00:01';
   $format = 'm-d-Y H:i';
-
+  $date = date('Y-m-d H:i:s');
+  dsm($date);
   $form['fields']['first_name'] = array(
   	'#type' => 'textfield',
     '#title' => t('First Name'),
-    '#default_value' => $firstname,
     '#required' => TRUE,
     '#attributes' => array('class' => array('first_name')),
     '#size' => 20,
   );
+  isset($firstname) ? $form['fields']['first_name']['#default_value'] = $firstname : '' ;
   
   $form['fields']['last_name'] = array(
   	'#type' => 'textfield',
     '#title' => t('Last Name'),
-    '#default_value' => $lastname,
     '#required' => TRUE,
     '#attributes' => array('class' => array('last_name')),
     '#size' => 20,
   );
+  isset($lastname) ? $form['fields']['last_name']['#default_value'] = $lastname : '' ;
   
   $form['fields']['email_address'] = array(
   	'#type' => 'textfield',
-    '#title' => t('Last Name'),
+    '#title' => t('Email Address'),
     '#default_value' => $user->mail,
     '#required' => TRUE,
     '#attributes' => array('class' => array('email_address')),
     '#size' => 20,  
   );
   
+  $form['fields']['phone'] = array(
+  	'#type' => 'textfield',
+    '#title' => t('Phone Number'),
+    '#description' => t('This number will not be stored or used for any purpose other than for the seller to contact you. '),
+    '#required' => TRUE,
+    '#attributes' => array('class' => array('phone_number')),
+    '#size' => 20,
+  ); 
+    
   $form['fields']['date'] = array(
     '#type' => 'date_popup',
-    '#title' => t('Date and time for appointment. Please note date and time on on seperate lines.'),
+    '#title' => t('Date & Time'),
+    '#description' => t('Date and time for appointment. Please note date and time on on seperate lines.'),
     '#date_format' => $format,
     '#date_label_position' => 'within',
     '#date_increment' => 5,
     '#date_year_range' => '-0:+1',
+    '#date_month_range' => '-0:+1',
     '#attributes' => array('class' => array('date')),
     '#default_value' => $date, 
   );
-  
+ 
   $form['fields']['submit'] = array(
     '#type' => 'submit',
     '#value' => 'Schedule Appointment',
@@ -167,14 +184,15 @@ function appointment_form_form_submit($form, &$form_state) {
 
 /**
  * Implements hook_mail().
+ * Constructs the message that is going to be sent.
  */
 function appointment_form_mail($key, &$message, $params) {
   $date = date('M d, Y', strtotime($params['values']['date']));
   $time = date('g:i A', strtotime($params['values']['date']));
   $message['subject'] = $params['values']['first_name'] . ' ' . $params['values']['last_name'] . ' would like to schedule an appointment.';
   $message['body'][] = $params['values']['first_name'] . ' is requesting to meet you or an agent at your home on ' . $date .
-  	' at ' . $time . '. Please send them an email at ' . $params['values']['email_address'] . ' if this time needs to ' . 
-    'be changed for any reason.';
+  	' at ' . $time . '. Please call them at ' . $params['values']['phone'] . ' or send them an email at ' . 
+    $params['values']['email_address'] . ' to confirm this appointment or change the details.';
 }
 
 /**
