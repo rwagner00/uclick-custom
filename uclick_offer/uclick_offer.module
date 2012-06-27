@@ -371,7 +371,9 @@ function uclick_offer_create_form_submit($form, &$form_state){
 	//dpm($form_state['values'],'submit function');
 	
 	//uclick_offer_offer_create($form_state['values']);
-	//dpm(uclick_offer_offer_create($form_state['values']));
+	$node_info = uclick_offer_offer_create($form_state['values']);
+	drupal_set_message('Thank you for submitting an offer');
+	drupal_goto($node_info['path']);
 }
 
 function uclick_offer_offer_create($info, $val=NULL){
