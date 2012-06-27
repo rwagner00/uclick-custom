@@ -34,12 +34,6 @@ function counter_offer_menu() {
   	'page arguments' => array('counter_offer_counter_form', 1),
   	'access arguments' => array('access content'),
   );
-  $items['make-offer/%']= array(
-  	'title' =>'Create Offer',
-  	'page callback' => 'drupal_get_form',
-  	'page arguments' => array('counter_offer_create_offer_form', 1),
-  	'access arguments' => array('access content'),
-  );
   return $items;
 }
 function counter_offer_main($nid, $val=NULL){
@@ -80,12 +74,12 @@ function counter_offer_main($nid, $val=NULL){
         }
       }
       $node -> field_offer_price[$node -> language][0]['value'] = $val['price'];
+      /*
       dpm(array(
       	'node -> closing' => $node -> field_offer_seller_closing,
       	'val -> closing' => $val['closing_boolean'],
-      
-      
       ));
+      */
       $node -> field_offer_seller_closing[$node -> language][0]['value'] = $val['closing_boolean'];
       $node -> field_offer_seller_repair[$node -> language][0]['value']  = $val['repair_boolean'];
       if(strcasecmp($val['closing_boolean'] , 'yes') == 0){
@@ -106,6 +100,8 @@ function counter_offer_main($nid, $val=NULL){
       	$node -> field_offer_repair_amount[$node -> language][0]['value'] = 0;
       	$node -> field_offer_repair_amount[$node -> language][0]['safe_value'] = 0;
       }
+      
+      $node -> field_offer_counter_offer_too[$node -> language][]['target_id']=$nid;
       
       node_save($node);
       dpm($node);
@@ -306,7 +302,7 @@ function conter_offer_block_content($delta) {
 	
 }
 function counter_offer_create_block_form($form, &$form_state) {
-	echo('Test');
+	
  $form['btn'] = array(
    '#type' => 'submit',
    '#value' => variable_get('counter_offer_btn_txt','Create a counter offer.'),
@@ -337,7 +333,7 @@ function counter_offer_offer_block_form($form, &$form_stat){
 	
 }
 function counter_offer_offer_block_form_submit($form, &$form_state){
-		dpm($form_state['values'],'form_state');
+		//dpm($form_state['values'],'form_state');
 		drupal_goto('make-offer/'.$form_state['values']['nid']);
 }
 /**
@@ -354,7 +350,7 @@ function counter_offer_create_pdf($node){
  * send out an email with the attached contract when a offer is created (should never be edited)
  * TODO: fix for the new counter offer idea 5/15/2012
  */
-function counter_offer_node_insert($node) {
+function counter_offer_node_i_insert($node) {
 	if(strcasecmp($node -> type, 'offer') == 0){
 		GLOBAL $user;
 		$lang = $node -> language;
@@ -470,7 +466,7 @@ function counter_offer_counter_form($form, &$form_state, $nid) {
 	  $form['repair_amount'] = array(
 			'#type' => 'textfield',
 	  	'#title' =>	'Repair Amount',
-	  	'#default_value' => (isset($n ->field_offer_repair_amount[$l][0]['value']) ? $n ->field_offer_repair_amount[$l][0]['value'] : 'no'),
+	  	'#default_value' => (isset($n ->field_offer_repair_amount[$l][0]['value']) ? $n ->field_offer_repair_amount[$l][0]['value'] : ''),
 	  	
 	  	'#maxlength' => 12,
 	  	'#size' => 12,

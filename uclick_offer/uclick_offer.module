@@ -1,14 +1,32 @@
 <?php 
+/**
+ * Implements hook_menu().
+ */
+function uclick_offer_menu() {
+  $items = array();
+	
+  $items['make-offer/%']= array(
+  	'title' =>'Create Offer',
+  	'page callback' => 'drupal_get_form',
+  	'page arguments' => array('uclick_offer_create_form', 1),
+  	'access arguments' => array('access content'),
+  );
 
+  return $items;
+}
 //CONTENTTYPE_node_form
 
 /**
  * Implements hook_form_alter().
  */
 function uclick_offer_form_alter(&$form, $form_state, $form_id) {
-
-  if ($form_id == 'offer_node_form') {
-    $form['#validate'][] = 'uclick_offer_offer_node_form_validate';
+	//dpm($form_id);
+	//return FALSE;
+  if ($form_id == 'offer_node_form' || $form_id = 'uclick_offer_create_form' ) {
+  	if($form_id == 'offer_node_form'){
+  		$form['#validate'][] = 'uclick_offer_offer_node_form_validate';
+  	}
+    
      
 /*
  * A set of functions to turn fields visible or invisible depending on other fields.
@@ -179,5 +197,256 @@ function uclick_offer_offer_node_form_validate($form, &$form_state) {
     $form_state['values']['field_offer_repair_amount']['und']['0']['value'] = '';
   }
 }
+/**
+ * 
+ * Gets info to help populate the offer form
+ * @param int $nid
+ * @return array with information or false on error
+ */
+function uclick_offer_offer_info($nid){
+	GLOBAL $user;
+	$node = node_load($nid);
+	$var = array();
+	if($node->type === 'property'){
+		if($user->uid == $node->uid){
+			//Why are you trying to buy your own house?!
+			return FALSE;
+		}
+		//then its not an offer!
+		$var['buyer'] = $user->uid;
+		$var['seller'] = $node ->uid;
+	}
+	//dpm($var,'var');
+	return $var;
+}
+/**
+ * 
+ * Form for the users to create offers
+ * @param $form
+ * @param $form_state
+ */
+function uclick_offer_create_form($form, &$form_state, $nid){
+	$vars = uclick_offer_offer_info($nid);
+	
+	$form['field_offer_price'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Price',
+		'#required' => true,
+		'#field_prefix' => '$',
+	);
+	$form['field_offer_home'] = array(
+		'#type' => 'hidden',
+		'#value' => $nid,
+	);
+	$form['field_offer_firstname'] = array(
+		'#type' => 'textfield',
+		'#title' => 'First Name',
+		'#description' => 'Your first name',
+		'#required' => true,
+	);
+	$form['field_offer_lastname'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Last Name',
+		'#description' => 'Your last name',
+		'#required' => true,
+	);
+	$category = array(
+		'individual' => 'Individual',
+		'agent' => 'Real Estate Agent',
+		'llc' => 'LLC',
+	);
+	$form['field_offer_category'] = array(
+		'#type' => 'select',
+		'#title' => t('Category'), //better name?
+		'#options' => $category,
+		'#required' => TRUE, 
+		'#description' => 'Are you an individual, agent, or representing an LLC?'
+	);
+	$yes_or_no = array(
+		'no' => 'No',
+		'yes' => 'Yes',
+	);
+	$form['field_offer_llc_authority'] = array(
+		'#type' => 'select',
+		'#title' => t('Do you have authority to sign?'),//t('Authority to Sign'), 
+		'#options' => $yes_or_no,
+		
+		//'#description' => 'Do you have authority to sign?',
+	);
+	$form['field_offer_llc_article']= array(
+		'#type' => 'select',
+		'#title' => t('Do you have an article of incorporation?'),//t('Article of Incorporation'), 
+		'#options' => $yes_or_no,
+		
+		//'#description' => 'Do you have an article of incorporation?',
+	);
+	$form['field_offer_second_buyer']= array(
+		'#type' => 'select',
+		'#title' => t('Is there a second buyer?( EX: spouse )'),//t('Second Buyer'), 
+		'#options' => $yes_or_no,
+		
+		//'#description' => 'Is there a second buyer?( EX: spouse )',
+	);
+	$form['field_offer_agent_question'] = array(
+		'#type' => 'select',
+		'#title' => t('Do you currently have a real estate agent?'),//t('Agent'), 
+		'#options' => $yes_or_no,
+	
+		//'#description' => 'Do you currently have a real estate agent?',
+	);
+	$form['field_offer_agent_options'] = array(
+		'#type' => 'select',
+		'#title' => t('Would you like to hire one for a fee of $2,000?'),//t('Authority to Sign'), 
+		'#options' => $yes_or_no,
+		
+		//'#description' => 'Would you like to hire one for a fee of $2,000?',
+	);
+	$form['field_offer_agent_name'] = array(
+		'#type' => 'textfield',
+		'#title' => t('What is the agent\'s name?'),//'Agent\'s Name',
+//		'#description' => 'What is the agent\'s name?',
+	);
+	$form['field_offer_address'] = array(
+		'#title' => t('Your street address, no P.O. boxes please'),
+		'#type' => 'textfield',
+		'#required' => TRUE,	
+	);
+	$form['field_offer_email'] = array(
+		'#title' => t('Email Address'),
+		'#type' => 'textfield',
+		'#required' => TRUE,
+	);
+	$form['field_offer_telephone'] = array(
+		'#title' => t('Telephone Number'),
+		'#type' => 'textfield',
+		'#description' => t('A valid ten digit telephone number in the form xxx-xxx-xxxx'),
+		//'#size' => 12,
+	);
+	$form['field_offer_seller_closing'] = array(
+		'#type' => 'select',
+		'#title' => t('Would you like the Seller to cover the closing cost?'),//t('Authority to Sign'), 
+		'#options' => $yes_or_no,
+	);
+	$form['field_offer_closing_amount'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Closing cost amount:'),
+//		'#required' => true,
+		'#field_prefix' => '$',
+		'#default_value' => '',
+	);
+	$form['field_offer_seller_repair'] = array(
+		'#type' => 'select',
+		'#title' => t('Would you like the Seller to provide a repair credit to cover repair cost?'),//t('Authority to Sign'), 
+		'#options' => $yes_or_no,
+	);
+	$form['field_offer_repair_amount'] = array(
+		'#type' => 'textfield',
+		'#title' => t('Repair credit amount:'),
+//		'#required' => true,
+		'#field_prefix' => '$',
+		'#default_value' => '',
+	);
+	$form['field_offer_contract'] = array(
+		'#type' => 'hidden',
+		'#value' => 'pdf',
+	);
+	$form['field_offer_buyer'] = array(
+		'#type' => 'hidden',
+		'#value' => $vars['buyer'], 
+	);
+	$form['field_offer_seller'] = array(
+		'#type' => 'hidden',
+		'#value' => $vars['seller'],
+	);
+	$form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
+	
+	//dpm($form, 'form array at end of _form function');
+	return $form;	
+}
+function uclick_offer_create_form_validate($form, &$form_state) {
+	//return uclick_offer_offer_node_form_validate($form, &$form_state);
+	//dpm('validate','validate funtion');
+}
+function uclick_offer_create_form_submit($form, &$form_state){
+	//dpm($form_state['values'],'submit function');
+	
+	//uclick_offer_offer_create($form_state['values']);
+	//dpm(uclick_offer_offer_create($form_state['values']));
+}
 
-
+function uclick_offer_offer_create($info, $val=NULL){
+  //$n = node_load($nid);
+  $info['field_offer_property'] = $info['field_offer_home'];
+	$home = node_load($info['field_offer_home']);
+	$node = new stdClass();
+	$node -> type = 'offer';
+	node_object_prepare($node);
+	$node -> title = $home->title . ' Offer '.date('r');
+	$node -> language = $l = $home -> language;//'und' ?
+	
+	$field_names = array(
+		'field_offer_price',
+		'field_offer_firstname',
+		'field_offer_lastname',
+		'field_offer_category',
+		'field_offer_llc_authority',
+		'field_offer_llc_article',
+		'field_offer_second_buyer',
+		'field_offer_agent_question',
+		'field_offer_agent_options',
+		'field_offer_agent_name',
+		'field_offer_address',
+		'field_offer_telephone',
+		'field_offer_seller_closing',
+		'field_offer_closing_amount',
+		'field_offer_seller_repair',
+		'field_offer_repair_amount',
+		'field_offer_offer_contract', 
+		
+	);
+	$not_set = array();
+	foreach($field_names as $key => $var){
+		if( isset($info[$var])){
+			if (!empty($info[$var])){
+				$node -> {$var}[$l][]['value'] = $info[$var];
+			}
+			elseif (strcasecmp($info[$var], 'field_offer_repair_amount')==0 || strcasecmp($info[$var], 'field_offer_seller_closing')){
+				$node -> {$var}[$l][]['value'] = 0;
+			}
+		}
+		else {
+			$not_set[] = $var;
+		}
+	}
+	
+	$field_ref = array(
+		'field_offer_property',
+		'field_offer_buyer',
+		'field_offer_seller',
+	);
+	foreach($field_ref as $key => $var){
+		if( isset($info[$var]) & !empty($info[$var]) ){
+			$node -> {$var}[$l][]['target_id'] = $info[$var];
+		}
+		else {
+			$not_set[] = $var;
+		}
+	}
+	//,
+	if( isset($info['field_offer_email']) & !empty($info['field_offer_email']) ){
+		$node ->field_offer_email[$l][]['email'] = $info['field_offer_email'];
+	}
+	else {
+			$not_set[] = array('field_offer_email');
+		}
+	
+	//dpm($not_set,'not set');
+	node_save($node);
+	//dpm($node);
+	$path = drupal_lookup_path('alias','node/'.$node->nid);
+	//dpm($path,'path');
+	return array(
+		'nid' => $node->nid,
+		'path' => $path,
+	);
+}
