@@ -34,7 +34,6 @@ function countdown_timer_block_view($delta = '') {
 
 function countdown_timer_block_content($full_date) {
   $remaining = date('Y-m-d', strtotime($full_date));
-dsm($remaining);
   return theme('jstimer', array(
    'widget_name' => 'jst_timer',
    'widget_args' => array(

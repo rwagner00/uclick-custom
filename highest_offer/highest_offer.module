@@ -21,30 +21,30 @@ function highest_offer_block_view($delta = '') {
     case 'highest_offer':
       $block['subject'] = "Highest Offer on This Property:";
       $block['content'] = get_highest_offer();
-      //$block['content'] = 'foo';
     break;
   }
   return $block;
 }
 
+
+//Function to get the highest offer on current property.
 function get_highest_offer() {
-  dsm('pass0');
   if (arg(0) == 'node' && is_numeric(arg(1))) {
-    dsm('passone');
+    //Get the current nid and make sure it's a property.
     $nid = arg(1);
-    $foo = node_load(52);
-    dsm($foo->type);
-    if (node_type_get_type($nid) == 'property') {
-      dsm('passtwo');
-      $highest_offer = db_select('field_data_field_offer_price', 'p')
-        ->fields('p', array('field_offer_price_value'))
-        ->condition('entity_id', $nid)
-        ->range(0, 1)
-        ->orderBy('field_offer_price_value', 'DESC')
-        ->execute()
-        ->fetch();
-      if (is_numeric($highest_offer) && $highest_offer > 0) {
-        return 'foo'; 
+    $node = node_load($nid);
+    if ($node->type == 'property') {
+      $offers = db_select('field_data_field_offer_property', 'prop')
+        ->fields('prop', array('entity_id'))
+        ->condition('field_offer_property_target_id', $nid);
+      $prices = db_select('field_data_field_offer_price', 'pric')
+        ->fields('pric', array('field_offer_price_value', 'entity_id'))
+        ->range(0,1)
+        ->orderBy('field_offer_price_value', 'DESC');
+      $prices -> join($offers, 'prop', 'pric.entity_id = prop.entity_id');
+      $results = $prices -> execute() -> fetchAll();
+      if (isset($results['0']) && is_numeric($results['0']->field_offer_price_value) && $results['0']->field_offer_price_value > 0) {
+        return '$' . number_format($results['0']->field_offer_price_value); 
       } 
       else {
         return 'No offers have been made on this property yet.';
