@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Advertisement entity feature.
+ */
+
+include_once 'advertisement_entity.features.inc';

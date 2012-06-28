@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the FAQ Entity feature.
+ */
+
+include_once 'faq_entity.features.inc';

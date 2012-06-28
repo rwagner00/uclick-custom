@@ -1,0 +1,11 @@
+name = Email Flags
+description = Sent Email Today and Updated Today flags
+core = 7.x
+package = Features
+version = 7.x-1.0
+project = email_flags
+dependencies[] = flag
+dependencies[] = flag
+features[features_api][] = api:1
+features[flag][] = email_sent
+features[flag][] = property_updated_today

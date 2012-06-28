@@ -1,0 +1,14 @@
+name = Advertisement entity
+description = Advertisement content type for uclick realty.
+core = 7.x
+package = Features
+version = 7.x-1.0
+project = advertisement_entity
+dependencies[] = features
+dependencies[] = image
+dependencies[] = link
+features[features_api][] = api:1
+features[field][] = node-advertisement-body
+features[field][] = node-advertisement-field_advertisement_image
+features[field][] = node-advertisement-field_advertisement_link
+features[node][] = advertisement

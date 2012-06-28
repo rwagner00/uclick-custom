@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Watcher Flag and Rule feature.
+ */
+
+include_once 'watcher_flag_and_rule.features.inc';
