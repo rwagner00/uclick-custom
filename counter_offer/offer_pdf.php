@@ -1,4 +1,8 @@
 <?php
+/**
+ * Creates the pdfs for contracts using fpdf
+ * 
+ */
   require('fpdf/fpdf.php');
   class PDF extends FPDF {
   	public $foo;

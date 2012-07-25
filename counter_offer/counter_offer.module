@@ -1,7 +1,6 @@
 <?php
-/* @author Reese Morgan
- * This is a module for uclickrealty.com
- * It helps maintain the offers and counter offers
+/* 
+ * maintain the offers and counter offers
 */
 /**
  * Implements hook_menu().
@@ -36,14 +35,23 @@ function counter_offer_menu() {
   );
   return $items;
 }
+/**
+ * 
+ * Clones a node
+ * @param int $nid id of original node
+ * @param unknown_type $val
+ * @return nid of new node
+ */
 function counter_offer_main($nid, $val=NULL){
   $n = node_load($nid);
-  if(strcasecmp($n -> type, 'offer') == 0){
+  if(strcasecmp($n -> type, 'offer') == 0 && isset($val)){
       $node = new stdClass();
       $node -> type = $n -> type;
+      //@todo: change title
       $node -> title = $n-> title . ' clone';
       $node -> language = $n -> language;
       node_object_prepare($node);
+      //List of field names to loop though
       $field_names = array(
         'field_offer_price',
         'field_offer_property',
@@ -67,12 +75,13 @@ function counter_offer_main($nid, $val=NULL){
       	'field_offer_buyer',
       	'field_offer_seller',
       );
-      $not_set;
+      //Clone all the old info into the new node 
       foreach($field_names as $var){
         if(isset($n -> $var)){
           $node -> $var = $n -> $var;
         }
       }
+      //Add the new info form the counter offer form
       $node -> field_offer_price[$node -> language][0]['value'] = $val['price'];
       /*
       dpm(array(
@@ -107,12 +116,13 @@ function counter_offer_main($nid, $val=NULL){
       dpm($node);
       return $node -> nid;
   }
+  //Test case
   elseif(strcasecmp($n -> type, 'page') == 0){
       GLOBAL $user;
       $node = new stdClass();
       $node -> type = $n -> type;
       node_object_prepare($node);
-      //@TODO: change $user -> name to something more meaning full or personal ?
+      //@TODO: change $user -> name 
       $node -> title = $n -> title . ' Counter Offer by ' . $user -> name;
       dsm($user);
       $node -> language = LANGUAGE_NONE;
@@ -123,7 +133,6 @@ function counter_offer_main($nid, $val=NULL){
   else{
     return FALSE;
   }
-  return $node -> nid;
 }
 /**
  * 
@@ -349,7 +358,9 @@ function counter_offer_create_pdf($node){
  * Implements hook_node_insert().
  * send out an email with the attached contract when a offer is created (should never be edited)
  * TODO: fix for the new counter offer idea 5/15/2012
+ * redo as an action
  */
+ 
 function counter_offer_node_i_insert($node) {
 	if(strcasecmp($node -> type, 'offer') == 0){
 		GLOBAL $user;
@@ -410,7 +421,7 @@ function counter_offer_node_i_insert($node) {
 		 		$from = $user -> mail;
 		 		$message = "this is a test message";
 		 		$file_txt = file_get_contents("public://test.pdf");
-		 		dpm($file_txt);
+		 		//dpm($file_txt);
 		 		$attachment = array(
 		 			array(
 				 		'name' => 'README.txt',
@@ -428,7 +439,6 @@ function counter_offer_node_i_insert($node) {
 		}	 	
 	}
 }
-
 
 /**
  * Implements hook_form().
