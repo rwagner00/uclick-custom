@@ -1,4 +1,18 @@
 <?php 
+
+/*
+ * Big module containing most functionality relating to offers.
+ * 
+ * Responsible for implementing javascript to restructure offer creation
+ * forms.
+ * 
+ * Certain parts of the offer content type aren't meant to be interacted with
+ * by users manually (such as buyer and seller id fields), so there were two 
+ * differing ideas. Implemented here is a manually created form that doesn't 
+ * show the fields that aren't meant to be manually entered. 
+ */
+
+
 /**
  * Implements hook_menu().
  */
@@ -14,7 +28,6 @@ function uclick_offer_menu() {
 
   return $items;
 }
-//CONTENTTYPE_node_form
 
 /**
  * Implements hook_form_alter().
@@ -22,8 +35,8 @@ function uclick_offer_menu() {
 function uclick_offer_form_alter(&$form, $form_state, $form_id) {
 	//dpm($form_id);
 	//return FALSE;
-  if ($form_id == 'offer_node_form' || $form_id = 'uclick_offer_create_form' ) {
-  	if($form_id == 'offer_node_form'){
+  if ($form_id == 'offer_node_form'  ) {
+    if($form_id == 'offer_node_form'){
   		$form['#validate'][] = 'uclick_offer_offer_node_form_validate';
   	}
     
@@ -360,24 +373,18 @@ function uclick_offer_create_form($form, &$form_state, $nid){
 	);
 	$form['submit'] = array('#type' => 'submit', '#value' => t('Submit'));
 	
-	//dpm($form, 'form array at end of _form function');
 	return $form;	
 }
 function uclick_offer_create_form_validate($form, &$form_state) {
-	//return uclick_offer_offer_node_form_validate($form, &$form_state);
-	//dpm('validate','validate funtion');
 }
 function uclick_offer_create_form_submit($form, &$form_state){
-	//dpm($form_state['values'],'submit function');
 	
-	//uclick_offer_offer_create($form_state['values']);
 	$node_info = uclick_offer_offer_create($form_state['values']);
 	drupal_set_message('Thank you for submitting an offer');
 	drupal_goto($node_info['path']);
 }
 
 function uclick_offer_offer_create($info, $val=NULL){
-  //$n = node_load($nid);
   $info['field_offer_property'] = $info['field_offer_home'];
 	$home = node_load($info['field_offer_home']);
 	$node = new stdClass();
@@ -442,11 +449,8 @@ function uclick_offer_offer_create($info, $val=NULL){
 			$not_set[] = array('field_offer_email');
 		}
 	
-	//dpm($not_set,'not set');
 	node_save($node);
-	//dpm($node);
 	$path = drupal_lookup_path('alias','node/'.$node->nid);
-	//dpm($path,'path');
 	return array(
 		'nid' => $node->nid,
 		'path' => $path,

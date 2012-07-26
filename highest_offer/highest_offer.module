@@ -1,5 +1,10 @@
 <?php 
 
+/*
+ * Generates a block that displays the highest offer on the current property.
+ * Only intended to work with the property content type. 
+ */
+
 /**
  * Implements hook_block_info().
  */
@@ -33,6 +38,7 @@ function get_highest_offer() {
     //Get the current nid and make sure it's a property.
     $nid = arg(1);
     $node = node_load($nid);
+    //Get the highest offer only.
     if ($node->type == 'property') {
       $offers = db_select('field_data_field_offer_property', 'prop')
         ->fields('prop', array('entity_id'))
@@ -43,6 +49,7 @@ function get_highest_offer() {
         ->orderBy('field_offer_price_value', 'DESC');
       $prices -> join($offers, 'prop', 'pric.entity_id = prop.entity_id');
       $results = $prices -> execute() -> fetchAll();
+      // Make sure we actually got a result and nothing went wrong.
       if (isset($results['0']) && is_numeric($results['0']->field_offer_price_value) && $results['0']->field_offer_price_value > 0) {
         return '$' . number_format($results['0']->field_offer_price_value); 
       } 

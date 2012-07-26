@@ -1,5 +1,10 @@
 <?php 
 
+/*
+ * Implements the jstimer module to generate a countdown timer block.
+ * As part of the Property content type a finish time can be specified. 
+ */
+
 /**
  * Implements hook_block_info().
  */
@@ -31,6 +36,11 @@ function countdown_timer_block_view($delta = '') {
   }
   return $block;
 }
+
+/**
+ * Block content.
+ * Is passed a date from block_view().
+ */
 
 function countdown_timer_block_content($full_date) {
   $remaining = date('Y-m-d', strtotime($full_date));

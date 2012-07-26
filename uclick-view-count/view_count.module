@@ -1,4 +1,12 @@
-<?php 
+<?php
+
+
+/*
+ * Extremely simple module to query the view count on the current node 
+ * and render a block showing that number.
+ * Information is pulled from Drupal's basic view tracking system.  
+ */
+
 
 /**
  * Implements hook_block_info().

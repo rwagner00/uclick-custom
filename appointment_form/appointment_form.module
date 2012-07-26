@@ -1,4 +1,18 @@
 <?php 
+
+/*
+ * The point of this module is to provide a block with an appointment form.
+ * The block is intended to exist on property nodes, and only on property nodes,
+ * though it's likely the functionality could be co-opted for other types.
+ * Current functionality has the block sending an email to the author of the node
+ * that the block exists on.
+ * Block implements flag module system to determine whether or not an email 
+ * has been sent by the current user in the last 24 hours.
+ * The flags are purged nightly between 8PM and 12AM.
+ * 
+ * Requirements are in .info file.
+ */
+
 /**
  * Implements hook_block_info().
  */
@@ -60,7 +74,7 @@ function appointment_form_form($form, &$form_state) {
  
   $format = 'm-d-Y H:i';
   $date = date('Y-m-d H:i:s');
-  dsm($date);
+
   $form['fields']['first_name'] = array(
   	'#type' => 'textfield',
     '#title' => t('First Name'),
@@ -122,6 +136,8 @@ function appointment_form_form($form, &$form_state) {
  * Appointment form validation.
  */
 function appointment_form_form_validate($form, &$form_state) {
+  
+  //make sure current user is logged in (in case form got rendered by an anon accidentally)
   global $user;
   if ($user->uid == 0) {
     form_set_error('fields', t('In order to reduce spam, you must be logged in to schedule an 
@@ -164,21 +180,26 @@ function appointment_form_form_submit($form, &$form_state) {
   $module = 'appointment_form';
   $key = 'schedule_appointment';
   
+  //Get nid of current node.
   if (arg(0) == 'node' && is_numeric(arg(1))) {
     $nid = arg(1);
     $node = node_load($nid);
   }
+  
+  //get email address of receiving user
   $to = db_select('users', 'u')
     ->fields('u', array('mail'))
     ->condition('uid', $node->uid)
     ->execute()
     ->fetchField();
 
+  //construct message
   $language = language_default();
   $params = $form_state;
   $from = (string)$user->mail;
   $send = TRUE;
   
+  //send!
   drupal_mail($module, $key, $to, $language, $params, $from, $send);
 }
 
@@ -187,8 +208,11 @@ function appointment_form_form_submit($form, &$form_state) {
  * Constructs the message that is going to be sent.
  */
 function appointment_form_mail($key, &$message, $params) {
+  //extract more usable dates from param
   $date = date('M d, Y', strtotime($params['values']['date']));
   $time = date('g:i A', strtotime($params['values']['date']));
+  
+  //construct message body
   $message['subject'] = $params['values']['first_name'] . ' ' . $params['values']['last_name'] . ' would like to schedule an appointment.';
   $message['body'][] = $params['values']['first_name'] . ' is requesting to meet you or an agent at your home on ' . $date .
   	' at ' . $time . '. Please call them at ' . $params['values']['phone'] . ' or send them an email at ' . 
@@ -200,6 +224,7 @@ function appointment_form_mail($key, &$message, $params) {
  * Deletes all emailed already today flags.
  */
 function appointment_form_cron() {
+  //only run during cron between 8PM and midnight
   if (date('H') >= 20 && date('H') <= 24 ) {
     db_delete('flag_counts')
       ->condition('fid', array(3))

@@ -1,4 +1,25 @@
 <?php 
+
+/*
+ * Uses flag module and a two stage system to flag nodes that have been updated
+ * in the last 24 hours. There is a "watch property" feature on the site where
+ * rules will send an email to users watching a property. This system
+ * is a spam minimizing step so that users only get updates once per day that 
+ * a property has been updated.
+ * 
+ * The system is two stage because hook_node_update here fires before the rule.
+ * In a one flag system the process is:
+ * property updated->flag set->rules checks for flag->flag exists so emails 
+ * never get sent.
+ * Current system implements a preflag to circumvent this problem. So process is:
+ * property updated->preflag set->rules checks updated_today flag->not set so send email.
+ * If the property is updated again, the module checks to see if preflag is set, and if
+ * it is, then the updated_today flag is set, and emails aren't sent. 
+ * 
+ * Flags are cleared nightly.
+ */
+
+
 /**
  * Implements hook_node_update().
  */
@@ -6,7 +27,6 @@ function property_update_node_update($node) {
   if ($node->type == 'property') {
     if (arg(0) == 'node' && is_numeric(arg(1))) {
       $nid = arg(1);
-      //dsm($nid);
       $preflag = flag_get_flag('property_preflag', $nid) or die("No Property Preflag Defined.");
       $updated_flag = flag_get_flag('property_updated_today', $nid) or die('No Property Flag defined');
       if (!$updated_flag->is_flagged($nid) && $preflag->is_flagged($nid)) {

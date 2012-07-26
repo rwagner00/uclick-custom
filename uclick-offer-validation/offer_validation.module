@@ -1,5 +1,10 @@
 <?php 
 
+/*
+ * Special validation for offers to make sure that the offer is at least half of the offer price. 
+ */
+
+
 /**
  * Implements hook_form_alter().
  */
