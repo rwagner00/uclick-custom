@@ -1,0 +1,13 @@
+name = Watcher Flag and Rule
+description = Includes the watcher flag and the rule to email people on update.
+core = 7.x
+package = Features
+version = 7.x-1.0
+project = watcher_flag_and_rule
+dependencies[] = entity
+dependencies[] = flag
+dependencies[] = flag
+dependencies[] = rules
+features[features_api][] = api:1
+features[flag][] = property_watch
+features[rules_config][] = rules_email_watcher

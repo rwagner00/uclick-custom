@@ -1,0 +1,7 @@
+<?php
+/**
+ * @file
+ * Code for the Offer Content Type feature.
+ */
+
+include_once 'offer_content_type.features.inc';
